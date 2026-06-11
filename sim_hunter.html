@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SIM Hunter — VNPT + Viettel</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@400;500;600&display=swap');
+:root{--neon:#00f5ff;--neon2:#ff0040;--neon3:#00ff88;--neon4:#ff9900;--bg:#050a14;--card:#0a1628;--border:#1a3060;--text:#c8d8f0;--dim:#4a6080}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Rajdhani',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,245,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,.025) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{max-width:1020px;margin:0 auto;padding:14px;position:relative;z-index:1}
+header{text-align:center;padding:18px 0 12px;margin-bottom:14px;border-bottom:1px solid var(--border);position:relative}
+header::after{content:'';position:absolute;bottom:-1px;left:50%;transform:translateX(-50%);width:200px;height:2px;background:linear-gradient(90deg,transparent,var(--neon),transparent)}
+.logo{font-family:'Orbitron',monospace;font-size:1.6rem;font-weight:900;background:linear-gradient(135deg,var(--neon),var(--neon2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:3px}
+.sub{color:var(--dim);font-size:.72rem;letter-spacing:3px;margin-top:3px;text-transform:uppercase}
+
+/* carrier tabs */
+.carrier-tabs{display:flex;gap:8px;margin-bottom:14px}
+.ctab{flex:1;display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;border-radius:10px;border:1px solid var(--border);cursor:pointer;transition:all .2s;background:transparent}
+.ctab:hover{border-color:rgba(255,255,255,.2)}
+.ctab.vnpt.active{border-color:#0066cc;background:rgba(0,102,204,.1);box-shadow:0 0 16px rgba(0,102,204,.2)}
+.ctab.viettel.active{border-color:#cc0022;background:rgba(204,0,34,.1);box-shadow:0 0 16px rgba(204,0,34,.2)}
+.ctab.both.active{border-color:var(--neon3);background:rgba(0,255,136,.07);box-shadow:0 0 16px rgba(0,255,136,.15)}
+.ctab-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;flex-shrink:0}
+.ctab.vnpt .ctab-icon{background:rgba(0,102,204,.2);color:#66aaff;border:1px solid rgba(0,102,204,.3)}
+.ctab.viettel .ctab-icon{background:rgba(204,0,34,.2);color:#ff6680;border:1px solid rgba(204,0,34,.3)}
+.ctab.both .ctab-icon{background:rgba(0,255,136,.15);color:var(--neon3);border:1px solid rgba(0,255,136,.3)}
+.ctab-name{font-family:'Orbitron',monospace;font-size:.72rem;font-weight:700;letter-spacing:1px}
+.ctab.vnpt .ctab-name{color:#66aaff}.ctab.viettel .ctab-name{color:#ff6680}.ctab.both .ctab-name{color:var(--neon3)}
+.ctab-sub{font-size:.7rem;color:var(--dim)}
+
+.srv-banner{display:flex;align-items:center;gap:9px;padding:8px 14px;border-radius:8px;margin-bottom:12px;font-size:.85rem;border:1px solid;transition:all .3s}
+.srv-banner.ok{background:rgba(0,255,136,.05);border-color:rgba(0,255,136,.28);color:var(--neon3)}
+.srv-banner.err{background:rgba(255,64,64,.05);border-color:rgba(255,64,64,.28);color:#ff8080}
+.srv-banner.chk{background:rgba(0,245,255,.05);border-color:rgba(0,245,255,.28);color:var(--neon)}
+.srv-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.srv-dot.ok{background:var(--neon3);box-shadow:0 0 7px var(--neon3);animation:pu 1.5s infinite}
+.srv-dot.err{background:#ff4040;box-shadow:0 0 7px #ff4040}
+.srv-dot.chk{background:var(--neon);box-shadow:0 0 7px var(--neon);animation:pu .5s infinite}
+@keyframes pu{0%,100%{opacity:1}50%{opacity:.4}}
+
+.panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px 18px;margin-bottom:13px;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3))}
+.ptitle{font-family:'Orbitron',monospace;font-size:.66rem;color:var(--neon);letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.ptitle::before{content:'';width:6px;height:6px;background:var(--neon);border-radius:50%;box-shadow:0 0 6px var(--neon);animation:pu 2s infinite;flex-shrink:0}
+
+.cfg-grid{display:grid;grid-template-columns:1fr 2fr 1fr;gap:9px;margin-bottom:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg label,.flabel{font-size:.66rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase}
+select,input,textarea{background:rgba(0,245,255,.04);border:1px solid var(--border);border-radius:5px;padding:7px 10px;color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.92rem;width:100%;-webkit-appearance:none;transition:all .2s}
+select:focus,input:focus,textarea:focus{outline:none;border-color:var(--neon);box-shadow:0 0 9px rgba(0,245,255,.11)}
+select option{background:#0a1628}
+textarea{resize:vertical;font-family:'Courier New',monospace;font-size:.83rem;line-height:1.6}
+
+.pattern-wrap{display:flex;gap:7px}
+.preset-col{display:flex;flex-direction:column;gap:4px;flex-shrink:0;min-width:80px}
+.pbtn{background:rgba(0,245,255,.05);border:1px solid rgba(0,245,255,.2);color:var(--neon);padding:4px 8px;border-radius:4px;cursor:pointer;font-family:'Rajdhani',sans-serif;font-size:.76rem;transition:all .2s;width:100%}
+.pbtn:hover{background:rgba(0,245,255,.12);border-color:var(--neon)}
+.pbtn.clr{color:var(--dim);border-color:var(--border);background:transparent}
+.pbtn.clr:hover{color:#ff8080;border-color:#ff4040}
+.pinfo{font-size:.68rem;color:var(--neon3);margin-top:3px}
+
+/* Viettel wildcard hint */
+.vt-hint{background:rgba(255,153,0,.07);border:1px solid rgba(255,153,0,.25);border-radius:6px;padding:7px 11px;font-size:.75rem;color:var(--neon4);margin-bottom:10px;display:none}
+.vt-hint.show{display:block}
+
+.checks{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px}
+.chk{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--border);border-radius:5px;cursor:pointer;font-size:.83rem;transition:all .2s}
+.chk:hover,.chk.on{border-color:var(--neon);background:rgba(0,245,255,.07);color:var(--neon)}
+.chk input{width:12px;height:12px;accent-color:var(--neon);cursor:pointer;flex-shrink:0}
+
+/* mem limit */
+.mem-row{background:rgba(0,0,0,.22);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:11px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mem-row label{font-size:.66rem;color:var(--neon);letter-spacing:2px;text-transform:uppercase;white-space:nowrap;flex-shrink:0}
+.mem-inputs{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.mem-inputs input{width:80px;text-align:center;font-family:'Orbitron',monospace;font-size:.85rem}
+.mem-inputs label{font-size:.72rem;color:var(--dim)}
+.mem-inputs select{width:auto;font-size:.8rem;padding:6px 8px}
+.mem-bar-wrap{flex:1;min-width:130px}
+.mem-bar-row{display:flex;justify-content:space-between;font-size:.66rem;color:var(--dim);margin-bottom:3px}
+.mem-bar-bg{height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.mem-bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--neon3),var(--neon));width:0%;transition:width .5s}
+.mem-detail{font-size:.63rem;color:var(--dim);margin-top:2px}
+
+/* sched */
+.sched-box{background:rgba(0,0,0,.22);border:1px solid var(--border);border-radius:8px;padding:11px 14px;margin-bottom:11px}
+.sched-title{font-size:.66rem;color:var(--neon);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+.sched-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:8px}
+.day-btn{padding:5px 3px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--dim);font-family:'Rajdhani',sans-serif;font-size:.8rem;cursor:pointer;transition:all .2s;text-align:center}
+.day-btn.on{background:rgba(0,245,255,.09);border-color:var(--neon);color:var(--neon)}
+.time-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.time-row label{font-size:.7rem;color:var(--dim);white-space:nowrap}
+input[type=time]{width:110px;padding:5px 8px;font-size:.86rem}
+.add-tbtn{background:rgba(0,245,255,.05);border:1px solid rgba(0,245,255,.28);color:var(--neon);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:.78rem;font-family:'Rajdhani',sans-serif}
+.add-tbtn:hover{background:rgba(0,245,255,.11)}
+.tchips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tchip{display:flex;align-items:center;gap:4px;background:rgba(0,245,255,.07);border:1px solid rgba(0,245,255,.2);color:var(--neon);padding:2px 8px;border-radius:20px;font-size:.76rem}
+.tchip button{background:none;border:none;color:var(--neon);cursor:pointer;font-size:.86rem;padding:0;line-height:1}
+.sched-st{font-size:.71rem;color:var(--dim);margin-top:5px}
+.sched-st.on{color:var(--neon3)}
+
+/* bottom */
+.bot{background:rgba(0,0,0,.28);border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.timer{font-family:'Orbitron',monospace;font-size:1.8rem;font-weight:900;color:var(--neon);text-shadow:0 0 14px rgba(0,245,255,.45);min-width:70px;text-align:center}
+.timer.warn{color:var(--neon2)}
+.tlabel{font-size:.66rem;color:var(--dim);letter-spacing:2px;text-align:center}
+.ring{position:relative;width:58px;height:58px;flex-shrink:0}
+.ring svg{transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4;transition:stroke-dashoffset 1s linear}
+.ring-bg{stroke:var(--border)}.ring-fg{stroke:var(--neon);stroke-linecap:round}
+.ring-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:.88rem;font-weight:700;color:var(--neon)}
+.btns{display:flex;flex-direction:column;gap:6px}
+.btn{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:2px;padding:9px 16px;border-radius:5px;border:none;cursor:pointer;transition:all .2s;text-transform:uppercase}
+.btn-go{background:linear-gradient(135deg,#003d5c,#006b8f);color:var(--neon);border:1px solid var(--neon);box-shadow:0 0 12px rgba(0,245,255,.14)}
+.btn-go:hover{box-shadow:0 0 24px rgba(0,245,255,.28);transform:translateY(-1px)}
+.btn-go.stop{background:linear-gradient(135deg,#5c0018,#8f0030);color:var(--neon2);border-color:var(--neon2)}
+.btn-once{background:transparent;color:var(--dim);border:1px solid var(--border)}
+.btn-once:hover{border-color:var(--text);color:var(--text)}
+.stats{flex:1;min-width:160px;display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
+.stat{background:rgba(0,0,0,.28);border:1px solid var(--border);border-radius:5px;padding:6px;text-align:center}
+.stat-v{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;color:var(--neon)}
+.stat-l{font-size:.58rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-top:1px}
+.sbar{display:flex;align-items:center;gap:8px;padding:7px 11px;background:rgba(0,0,0,.28);border-radius:5px;margin-top:9px;font-size:.78rem;border:1px solid var(--border)}
+.sdot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex-shrink:0;transition:all .3s}
+.sdot.act{background:var(--neon3);box-shadow:0 0 6px var(--neon3);animation:pu 1s infinite}
+.sdot.run{background:var(--neon);box-shadow:0 0 6px var(--neon);animation:pu .5s infinite}
+.sdot.err{background:#ff4040;box-shadow:0 0 6px #ff4040}
+#stxt{flex:1}
+.badge{background:rgba(0,245,255,.08);border:1px solid rgba(0,245,255,.26);color:var(--neon);padding:2px 8px;border-radius:20px;font-family:'Orbitron',monospace;font-size:.65rem;white-space:nowrap}
+.log{background:rgba(0,0,0,.38);border:1px solid var(--border);border-radius:5px;padding:7px;max-height:88px;overflow-y:auto;font-family:'Courier New',monospace;font-size:.7rem;margin-top:7px}
+.log::-webkit-scrollbar{width:3px}.log::-webkit-scrollbar-thumb{background:var(--border)}
+.ll{color:var(--dim);line-height:1.5}
+.ll.i{color:var(--neon)}.ll.s{color:var(--neon3)}.ll.w{color:#ffa500}.ll.v{color:#ff6680}
+
+/* results */
+.res-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;flex-wrap:wrap;gap:7px}
+.res-count{font-family:'Orbitron',monospace;font-size:.73rem;color:var(--neon3)}
+.export-row{display:flex;gap:5px;flex-wrap:wrap;align-items:center}
+.btn-sm{font-family:'Orbitron',monospace;font-size:.6rem;font-weight:700;letter-spacing:1px;padding:6px 12px;border-radius:5px;border:none;cursor:pointer;text-transform:uppercase;transition:all .2s}
+.btn-xl{background:linear-gradient(135deg,#1a3a00,#2d6600);color:#7fff00;border:1px solid #5a9900}
+.btn-txt{background:linear-gradient(135deg,#002244,#004488);color:#88ccff;border:1px solid #0066cc}
+.btn-cp{background:linear-gradient(135deg,#2a0044,#550088);color:#cc88ff;border:1px solid #8800cc}
+.btn-clr{background:transparent;color:var(--dim);border:1px solid var(--border)}
+.btn-clr:hover{border-color:var(--text);color:var(--text)}
+
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.show{display:flex}
+.modal{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:640px;max-height:82vh;display:flex;flex-direction:column;position:relative}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--neon),var(--neon2),var(--neon3));border-radius:12px 12px 0 0}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Orbitron',monospace;font-size:.73rem;color:var(--neon);letter-spacing:2px}
+.modal-close{background:none;border:none;color:var(--dim);cursor:pointer;font-size:1.25rem;line-height:1}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:12px 16px;flex:1;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.modal-ta{flex:1;background:rgba(0,0,0,.38);border:1px solid var(--border);border-radius:6px;padding:9px;color:var(--neon3);font-family:'Courier New',monospace;font-size:.76rem;resize:none;min-height:230px;line-height:1.6}
+.modal-ta:focus{outline:none;border-color:var(--neon)}
+.modal-foot{display:flex;gap:6px;padding:10px 16px;border-top:1px solid var(--border)}
+
+/* sim grid */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-height:520px;overflow-y:auto;padding-right:3px}
+.sgrid::-webkit-scrollbar{width:4px}.sgrid::-webkit-scrollbar-track{background:var(--bg)}.sgrid::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.scard{background:rgba(0,245,255,.02);border:1px solid var(--border);border-radius:7px;padding:10px 13px;transition:all .2s;cursor:pointer;animation:fi .3s ease;position:relative}
+@keyframes fi{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.scard:hover{border-color:var(--neon);background:rgba(0,245,255,.05);transform:translateY(-2px);box-shadow:0 3px 14px rgba(0,245,255,.08)}
+.scard.hot{border-color:rgba(255,0,64,.38);background:rgba(255,0,64,.03)}
+.scard.hot:hover{border-color:var(--neon2);box-shadow:0 3px 14px rgba(255,0,64,.11)}
+.carrier-pill{position:absolute;top:8px;right:8px;padding:1px 7px;border-radius:20px;font-size:.6rem;font-weight:700;letter-spacing:1px}
+.carrier-pill.vnpt{background:rgba(0,102,204,.15);color:#66aaff;border:1px solid rgba(0,102,204,.3)}
+.carrier-pill.viettel{background:rgba(204,0,34,.15);color:#ff6680;border:1px solid rgba(204,0,34,.3)}
+.snum{font-family:'Orbitron',monospace;font-size:1.1rem;font-weight:700;color:#e8f4ff;letter-spacing:1px;margin-bottom:5px;padding-right:42px}
+.scard.hot .snum{color:#ffd0d0}
+.hl{color:var(--neon);text-shadow:0 0 7px rgba(0,245,255,.35)}
+.scard.hot .hl{color:var(--neon2)}
+.smeta{display:flex;justify-content:space-between;align-items:center;font-size:.72rem;color:var(--dim)}
+.sprice{color:var(--neon3);font-weight:600;font-size:.82rem}
+.stags{display:flex;gap:3px;flex-wrap:wrap;margin-top:4px}
+.tag{padding:2px 6px;border-radius:20px;font-size:.62rem;border:1px solid}
+.t1{border-color:rgba(0,245,255,.38);color:var(--neon);background:rgba(0,245,255,.05)}
+.t2{border-color:rgba(0,255,136,.38);color:var(--neon3);background:rgba(0,255,136,.05)}
+.t3{border-color:rgba(255,153,0,.38);color:#ffa500;background:rgba(255,153,0,.05)}
+.t4{border-color:rgba(255,0,64,.38);color:var(--neon2);background:rgba(255,0,64,.05)}
+.sbar2{height:3px;border-radius:2px;margin-top:4px;background:var(--border);overflow:hidden}
+.sbar2f{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--neon),var(--neon3));transition:width .4s}
+.empty{text-align:center;padding:44px 16px;color:var(--dim);grid-column:1/-1}
+@media(max-width:640px){.cfg-grid{grid-template-columns:1fr 1fr}.logo{font-size:1.25rem}.sgrid{grid-template-columns:1fr}.sched-days{grid-template-columns:repeat(4,1fr)}.stats{grid-template-columns:repeat(2,1fr)}.carrier-tabs{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)this.classList.remove('show')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="modalTitle">📋 DANH SÁCH SIM</div>
+      <button class="modal-close" onclick="document.getElementById('modalBg').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body"><textarea class="modal-ta" id="modalTA" readonly></textarea></div>
+    <div class="modal-foot">
+      <button class="btn-sm btn-cp" onclick="copyModal()">📋 Copy tất cả</button>
+      <button class="btn-sm btn-txt" onclick="downloadTxt()">⬇ Tải .txt</button>
+      <button class="btn-sm btn-clr" onclick="document.getElementById('modalBg').classList.remove('show')">Đóng</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+<header>
+  <div class="logo">SIM HUNTER PRO</div>
+  <div class="sub">VNPT · Viettel · v7.0 · Multi Carrier</div>
+</header>
+
+<!-- CARRIER TABS -->
+<div class="carrier-tabs">
+  <div class="ctab vnpt active" id="tab-vnpt" onclick="setCarrier('vnpt')">
+    <div class="ctab-icon">VNPT</div>
+    <div><div class="ctab-name">VNPT</div><div class="ctab-sub">VinaPhone</div></div>
+  </div>
+  <div class="ctab viettel" id="tab-viettel" onclick="setCarrier('viettel')">
+    <div class="ctab-icon">VTT</div>
+    <div><div class="ctab-name">Viettel</div><div class="ctab-sub">Viettel Telecom</div></div>
+  </div>
+  <div class="ctab both" id="tab-both" onclick="setCarrier('both')">
+    <div class="ctab-icon">ALL</div>
+    <div><div class="ctab-name">Cả hai</div><div class="ctab-sub">Song song</div></div>
+  </div>
+</div>
+
+<div class="srv-banner chk" id="srvBanner">
+  <div class="srv-dot chk" id="srvDot"></div>
+  <span id="srvTxt">Đang kiểm tra proxy server...</span>
+</div>
+
+<div class="panel">
+  <div class="ptitle">⚙ Cấu hình tìm kiếm</div>
+
+  <!-- Viettel hint -->
+  <div class="vt-hint" id="vtHint">
+    💡 <strong>Viettel dùng wildcard *</strong> — VD: <code>*88</code> = kết thúc bằng 88 &nbsp;|&nbsp; <code>088*</code> = bắt đầu bằng 088 &nbsp;|&nbsp; <code>*888*</code> = chứa 888 &nbsp;|&nbsp; <code>*8888</code> = kết thúc 4 số 8
+  </div>
+
+  <div class="cfg-grid">
+    <!-- VNPT prefix (ẩn khi Viettel) -->
+    <div class="fg" id="vnptPrefixWrap">
+      <label>Đầu số (VNPT)</label>
+      <select id="prefix">
+        <option value="8481">0817</option>
+        <option value="8482">0818</option>
+        <option value="8483">0819</option>
+        <option value="8481|8482|8483">081x — Tất cả</option>
+        <option value="848">848x</option>
+        <option value="">Không lọc</option>
+      </select>
+    </div>
+
+    <div class="fg">
+      <label id="patternLabel">Dạng số <span style="color:var(--dim);font-size:.6rem">(mỗi dòng 1 dạng)</span></label>
+      <div class="pattern-wrap">
+        <div style="flex:1">
+          <textarea id="patterns" rows="4" placeholder="Mỗi dòng 1 pattern&#10;VNPT: 888, 9999, 1234&#10;Viettel: *888, *8888, *99*"></textarea>
+          <div class="pinfo" id="patternInfo">0 dạng số</div>
+        </div>
+        <div class="preset-col">
+          <div style="font-size:.6rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Mẫu</div>
+          <button class="pbtn" onclick="addPreset('tucquy')">🎯 Tứ quý</button>
+          <button class="pbtn" onclick="addPreset('ganh')">🔁 Gánh</button>
+          <button class="pbtn" onclick="addPreset('tien')">↗ Tiến</button>
+          <button class="pbtn" onclick="addPreset('dep8')">8️⃣ Số 8</button>
+          <button class="pbtn" onclick="addPreset('dep9')">9️⃣ Số 9</button>
+          <button class="pbtn clr" onclick="clearPat()">✕ Xóa</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="fg">
+      <label>Gói / Lặp lại</label>
+      <select id="commit" style="margin-bottom:6px">
+        <option value="0">Tất cả gói</option>
+        <option value="1">Có cam kết</option>
+      </select>
+      <label>Lặp lại mỗi</label>
+      <select id="interval">
+        <option value="10">10 giây</option>
+        <option value="30">30 giây</option>
+        <option value="60" selected>60 giây</option>
+        <option value="120">2 phút</option>
+        <option value="300">5 phút</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="checks" id="fChecks">
+    <label class="chk on"><input type="checkbox" value="all" checked onchange="tF(this)"> Tất cả</label>
+    <label class="chk"><input type="checkbox" value="tucquy" onchange="tF(this)"> Tứ quý+</label>
+    <label class="chk"><input type="checkbox" value="ganh" onchange="tF(this)"> Gánh/Ốc</label>
+    <label class="chk"><input type="checkbox" value="tien" onchange="tF(this)"> Tiến/Lùi</label>
+    <label class="chk"><input type="checkbox" value="lap" onchange="tF(this)"> Lặp đuôi</label>
+    <label class="chk"><input type="checkbox" value="dep" onchange="tF(this)"> ★ ≥50</label>
+  </div>
+
+  <!-- Memory limit -->
+  <div class="mem-row">
+    <label>📦 Bộ nhớ</label>
+    <div class="mem-inputs">
+      <label>Giữ tối đa</label>
+      <input type="number" id="maxResults" value="200" min="50" max="2000" step="50" oninput="updMem()">
+      <label>số — Khi đầy:</label>
+      <select id="overflowAction">
+        <option value="trim_old">Xóa cũ nhất</option>
+        <option value="trim_low">Xóa điểm thấp</option>
+        <option value="stop">Dừng thêm</option>
+        <option value="clear_all">Xóa hết & tiếp</option>
+      </select>
+    </div>
+    <div class="mem-bar-wrap">
+      <div class="mem-bar-row"><span>Bộ nhớ</span><span id="memPct">0%</span></div>
+      <div class="mem-bar-bg"><div class="mem-bar-fill" id="memFill"></div></div>
+      <div class="mem-detail" id="memDetail">0 / 200 số</div>
+    </div>
+  </div>
+
+  <!-- Schedule -->
+  <div class="sched-box">
+    <div class="sched-title">⏰ Lịch tự động</div>
+    <div class="sched-days" id="dayGrid">
+      <button class="day-btn on" data-d="1" onclick="toggleDay(this)">T2</button>
+      <button class="day-btn on" data-d="2" onclick="toggleDay(this)">T3</button>
+      <button class="day-btn on" data-d="3" onclick="toggleDay(this)">T4</button>
+      <button class="day-btn on" data-d="4" onclick="toggleDay(this)">T5</button>
+      <button class="day-btn on" data-d="5" onclick="toggleDay(this)">T6</button>
+      <button class="day-btn on" data-d="6" onclick="toggleDay(this)">T7</button>
+      <button class="day-btn on" data-d="0" onclick="toggleDay(this)">CN</button>
+    </div>
+    <div class="time-row">
+      <label>Giờ chạy:</label>
+      <input type="time" id="timeInput" value="08:00">
+      <button class="add-tbtn" onclick="addTS()">+ Thêm</button>
+    </div>
+    <div class="tchips" id="tchips"></div>
+    <div class="sched-st" id="schedSt">⏸ Chưa bật lịch</div>
+  </div>
+
+  <div class="bot">
+    <div class="ring">
+      <svg width="58" height="58" viewBox="0 0 58 58">
+        <circle class="ring-bg" cx="29" cy="29" r="24"/>
+        <circle class="ring-fg" id="ringFg" cx="29" cy="29" r="24" stroke-dasharray="150.8" stroke-dashoffset="150.8"/>
+      </svg>
+      <div class="ring-num" id="ringN">—</div>
+    </div>
+    <div>
+      <div class="timer" id="timerEl">01:00</div>
+      <div class="tlabel">ĐẾM NGƯỢC</div>
+    </div>
+    <div class="btns">
+      <button class="btn btn-go" id="btnAuto" onclick="toggleAuto()">▶ BẮT ĐẦU TỰ ĐỘNG</button>
+      <button class="btn btn-once" onclick="fetchOnce()">🔍 TÌM 1 LẦN NGAY</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="stat-v" id="sRound">0</div><div class="stat-l">Vòng</div></div>
+      <div class="stat"><div class="stat-v" id="sFound" style="color:var(--neon3)">0</div><div class="stat-l">Lưu</div></div>
+      <div class="stat"><div class="stat-v" id="sVnpt" style="color:#66aaff">0</div><div class="stat-l">VNPT</div></div>
+      <div class="stat"><div class="stat-v" id="sViettel" style="color:#ff6680">0</div><div class="stat-l">Viettel</div></div>
+    </div>
+  </div>
+
+  <div class="sbar">
+    <div class="sdot" id="sdot"></div>
+    <span id="stxt">Chờ proxy server...</span>
+    <span class="badge" id="bdg">0 SIM</span>
+  </div>
+  <div class="log" id="log">
+    <div class="ll">[ SIM HUNTER PRO v7.0 — VNPT + Viettel ]</div>
+    <div class="ll">[ Proxy: http://localhost:3000 ]</div>
+  </div>
+</div>
+
+<div class="panel">
+  <div class="res-head">
+    <div class="ptitle" style="margin:0">📡 Kết quả</div>
+    <div class="export-row">
+      <div class="res-count" id="rCount">0 số</div>
+      <button class="btn-sm btn-xl" onclick="exportXLSX()">📊 Excel</button>
+      <button class="btn-sm btn-txt" onclick="showText()">📄 Text</button>
+      <button class="btn-sm btn-cp" onclick="copyAll()">📋 Copy</button>
+      <button class="btn-sm btn-clr" onclick="doClear()">🗑 Xóa</button>
+    </div>
+  </div>
+  <div class="sgrid" id="grid">
+    <div class="empty"><div style="font-size:2.2rem;margin-bottom:8px">📡</div><div>Nhấn <strong>TÌM 1 LẦN NGAY</strong></div></div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+const PROXY = 'http://localhost:3000';
+let serverOK = false;
+let carrier = 'vnpt'; // vnpt | viettel | both
+
+// ── CARRIER ────────────────────────────────────────────────────
+function setCarrier(c) {
+  carrier = c;
+  ['vnpt','viettel','both'].forEach(x => document.getElementById('tab-'+x).classList.toggle('active', x===c));
+  const isVT = c === 'viettel' || c === 'both';
+  document.getElementById('vtHint').classList.toggle('show', isVT);
+  document.getElementById('vnptPrefixWrap').style.opacity = (c==='viettel') ? '0.3' : '1';
+  document.getElementById('vnptPrefixWrap').style.pointerEvents = (c==='viettel') ? 'none' : '';
+  // Update preset hints
+  if (isVT) {
+    document.getElementById('patternLabel').innerHTML = 'Dạng số <span style="color:var(--neon4);font-size:.6rem">(Viettel dùng * wildcard)</span>';
+  } else {
+    document.getElementById('patternLabel').innerHTML = 'Dạng số <span style="color:var(--dim);font-size:.6rem">(mỗi dòng 1 dạng)</span>';
+  }
+}
+
+// ── SERVER CHECK ───────────────────────────────────────────────
+async function checkServer() {
+  try {
+    const r = await fetch(`${PROXY}?carrier=vnpt&search=88&prefix=8481&commit=0`, {signal: AbortSignal.timeout(3000)});
+    if (r.ok) {
+      serverOK = true;
+      document.getElementById('srvBanner').className = 'srv-banner ok';
+      document.getElementById('srvDot').className = 'srv-dot ok';
+      document.getElementById('srvTxt').textContent = '✓ Proxy đang chạy — VNPT + Viettel sẵn sàng';
+      setSt('Proxy OK — Chọn nhà mạng và nhấn TÌM','act');
+      addLog('✓ Proxy kết nối OK','s');
+    }
+  } catch {
+    serverOK = false;
+    document.getElementById('srvBanner').className = 'srv-banner err';
+    document.getElementById('srvDot').className = 'srv-dot err';
+    document.getElementById('srvTxt').innerHTML = '✗ Proxy chưa chạy — Double click <strong>START.bat</strong>';
+    setSt('Cần chạy START.bat!','err');
+    addLog('✗ Proxy chưa chạy. Double click START.bat','w');
+    setTimeout(checkServer, 5000);
+  }
+}
+
+// ── PRESETS ────────────────────────────────────────────────────
+const PRESETS_VNPT = {
+  tucquy: ['1111','2222','3333','4444','5555','6666','7777','8888','9999','0000'],
+  ganh:   ['123123','456456','789789','121212','232323','686868','868686','969696'],
+  tien:   ['123456','234567','345678','456789','567890','654321','987654','876543'],
+  dep8:   ['888','8888','8886','8868','6888','8880','0888','8808'],
+  dep9:   ['999','9999','9990','9900','9909','9669','9696','9889'],
+};
+const PRESETS_VTT = {
+  tucquy: ['*1111','*2222','*3333','*4444','*5555','*6666','*7777','*8888','*9999','*0000'],
+  ganh:   ['*123123','*456456','*686868','*868686','*969696','*121212'],
+  tien:   ['*123456','*234567','*456789','*654321','*987654','*876543'],
+  dep8:   ['*888','*8888','*88888','*8686','*6868','*8866'],
+  dep9:   ['*999','*9999','*99999','*9669','*6996','*9889'],
+};
+
+function addPreset(key) {
+  const isVT = carrier === 'viettel';
+  const src = isVT ? PRESETS_VTT : PRESETS_VNPT;
+  const ta = document.getElementById('patterns');
+  const existing = ta.value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const toAdd = (src[key]||[]).filter(p => !existing.includes(p));
+  if (toAdd.length) ta.value = (ta.value.trim() ? ta.value.trim()+'\n' : '') + toAdd.join('\n');
+  updPI();
+}
+function clearPat() { document.getElementById('patterns').value=''; updPI(); }
+function updPI() {
+  const list = getPatterns();
+  document.getElementById('patternInfo').textContent = list.length ? `${list.length} dạng số` : '0 (tìm tất cả)';
+}
+function getPatterns() {
+  return document.getElementById('patterns').value.split('\n').map(s=>s.trim()).filter(Boolean);
+}
+document.getElementById('patterns').addEventListener('input', updPI);
+
+// ── SCORE ──────────────────────────────────────────────────────
+function scoreNum(num) {
+  const tail = num.slice(-6);
+  let sc=0; const tags=[]; let cat='';
+  const qmax = (tail.match(/(.)\1+/g)||[]).reduce((m,x)=>Math.max(m,x.length),0);
+  if(qmax>=6){sc+=100;tags.push({l:'Lục quý!!!',c:'t4'});cat='tucquy';}
+  else if(qmax>=5){sc+=80;tags.push({l:'Ngũ quý!!',c:'t4'});cat='tucquy';}
+  else if(qmax>=4){sc+=60;tags.push({l:'Tứ quý',c:'t2'});cat='tucquy';}
+  else if(qmax>=3){sc+=22;tags.push({l:'Tam quý',c:'t1'});}
+  if(tail.slice(0,3)===tail.slice(3,6)){sc+=55;tags.push({l:'Gánh đôi',c:'t4'});cat=cat||'ganh';}
+  if(/^(.)\1(.)\2(.)\3$/.test(tail)){sc+=38;tags.push({l:'Đôi kép',c:'t4'});cat=cat||'ganh';}
+  if(/^(..)\1\1$/.test(tail)){sc+=42;tags.push({l:'Gánh 3x',c:'t4'});cat=cat||'ganh';}
+  if(tail===tail.split('').reverse().join('')){sc+=48;tags.push({l:'Đối xứng',c:'t1'});}
+  let inc=0,dec=0,mI=0,mD=0;
+  for(let i=1;i<tail.length;i++){
+    const a=+tail[i-1],b=+tail[i];
+    b===(a+1)%10?inc++:inc=0; b===(a+9)%10?dec++:dec=0;
+    mI=Math.max(mI,inc); mD=Math.max(mD,dec);
+  }
+  if(mI>=5){sc+=58;tags.push({l:'Tiến 6',c:'t3'});cat=cat||'tien';}
+  else if(mI>=3){sc+=22;tags.push({l:'Tiến '+(mI+1),c:'t3'});cat=cat||'tien';}
+  if(mD>=5){sc+=55;tags.push({l:'Lùi 6',c:'t3'});cat=cat||'tien';}
+  else if(mD>=3){sc+=20;tags.push({l:'Lùi '+(mD+1),c:'t3'});cat=cat||'tien';}
+  const mL = tail.match(/(.)\1+$/);
+  if(mL&&mL[0].length>=2&&qmax<4){const n=mL[0].length;sc+=n*8;if(n>=3){tags.push({l:`Lặp ${n}đuôi`,c:'t1'});cat=cat||'lap';}}
+  for(let c=0;c<=9;c++){if(tail.split('').filter(x=>+x===c).length>=5&&qmax<5){sc+=32;tags.push({l:`Ngũ phú ${c}`,c:'t2'});cat=cat||'tucquy';break;}}
+  return {sc:Math.min(100,sc), tags, cat:cat||'dep', hot:sc>=65};
+}
+
+function fmtNum_vnpt(s) { return s.startsWith('84') ? '0'+s.slice(2) : s; }
+function fmtNum_vtt(s)  { return '0'+s; } // isdn = 9 digits, thêm 0 đầu
+function fmtP(p)        { return (!p||p==0) ? 'Liên hệ' : new Intl.NumberFormat('vi-VN').format(p)+'đ'; }
+function hlN(n,kw) {
+  if(!kw||kw.startsWith('*')) return n;
+  const i=n.indexOf(kw); if(i<0) return n;
+  return n.slice(0,i)+`<span class="hl">${n.slice(i,i+kw.length)}</span>`+n.slice(i+kw.length);
+}
+
+// ── MEMORY ─────────────────────────────────────────────────────
+function getMax() { return parseInt(document.getElementById('maxResults').value)||200; }
+function applyMem(newCount) {
+  const max=getMax(), action=document.getElementById('overflowAction').value;
+  if(results.length<=max){updMem();return;}
+  if(action==='trim_old'){addLog(`🧹 Xóa ${results.length-max} số cũ`,'w');results=results.slice(0,max);}
+  else if(action==='trim_low'){results.sort((a,b)=>b.sc-a.sc);addLog(`🧹 Xóa ${results.length-max} số điểm thấp`,'w');results=results.slice(0,max);}
+  else if(action==='stop'){results=results.slice(newCount).slice(0,max);addLog(`⛔ Đủ ${max} số, dừng thêm`,'w');}
+  else if(action==='clear_all'){results=results.slice(0,newCount).slice(0,max);addLog(`🧹 Xóa cũ, giữ ${results.length} mới`,'w');}
+  updMem();
+}
+function updMem() {
+  const max=getMax(),cur=results.length,pct=Math.min(100,Math.round(cur/max*100));
+  document.getElementById('memPct').textContent=pct+'%';
+  document.getElementById('memDetail').textContent=`${cur} / ${max} số`;
+  const f=document.getElementById('memFill');
+  f.style.width=pct+'%';
+  f.style.background=pct>=90?'linear-gradient(90deg,#ff4040,#ff0040)':pct>=70?'linear-gradient(90deg,#ffa500,var(--neon2))':'linear-gradient(90deg,var(--neon3),var(--neon))';
+}
+document.getElementById('maxResults').addEventListener('input',updMem);
+
+// ── SCHEDULE ───────────────────────────────────────────────────
+let timeSlots=[],activeDays=new Set([0,1,2,3,4,5,6]),schedTid=null;
+function toggleDay(b){const d=+b.dataset.d;activeDays.has(d)?(activeDays.delete(d),b.classList.remove('on')):(activeDays.add(d),b.classList.add('on'));}
+function addTS(){const t=document.getElementById('timeInput').value;if(!t||timeSlots.includes(t))return;timeSlots.push(t);timeSlots.sort();renderTC();}
+function removeSlot(t){timeSlots=timeSlots.filter(x=>x!==t);renderTC();}
+function renderTC(){document.getElementById('tchips').innerHTML=timeSlots.map(t=>`<div class="tchip">${t}<button onclick="removeSlot('${t}')">×</button></div>`).join('');}
+function checkSched(){
+  if(!timeSlots.length||!running)return;
+  const now=new Date(),dow=now.getDay();
+  if(!activeDays.has(dow))return;
+  const hm=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  if(timeSlots.includes(hm)&&now.getSeconds()===0){addLog(`⏰ Lịch ${hm} → tìm kiếm!`,'i');doFetch();}
+}
+function updSchedSt(){
+  const el=document.getElementById('schedSt');
+  if(!running||!timeSlots.length){el.textContent='⏸ Chưa bật lịch';el.className='sched-st';return;}
+  const dn=['CN','T2','T3','T4','T5','T6','T7'];
+  el.textContent=`✅ ${timeSlots.join(', ')} | ${[...activeDays].sort().map(d=>dn[d]).join(', ')}`;
+  el.className='sched-st on';
+}
+
+// ── STATE ──────────────────────────────────────────────────────
+let running=false,tid=null,cd=60,round=0,totalFound=0,cntVnpt=0,cntViettel=0,results=[];
+
+function addLog(m,t=''){
+  const d=document.getElementById('log');
+  const l=document.createElement('div');l.className='ll '+t;
+  l.textContent=`[${new Date().toLocaleTimeString('vi-VN')}] ${m}`;
+  d.appendChild(l);d.scrollTop=d.scrollHeight;
+  while(d.children.length>60)d.removeChild(d.firstChild);
+}
+function setSt(m,s=''){document.getElementById('stxt').textContent=m;document.getElementById('sdot').className='sdot '+s;}
+function tF(cb){cb.closest('label').classList.toggle('on',cb.checked);}
+function getF(){return[...document.querySelectorAll('#fChecks input:checked')].map(c=>c.value);}
+function passF(cat,sc,f){if(f.includes('all')||!f.length)return true;if(f.includes('dep')&&sc>=50)return true;return f.includes(cat);}
+function updT(v){
+  const m=Math.floor(v/60).toString().padStart(2,'0'),s=(v%60).toString().padStart(2,'0');
+  const el=document.getElementById('timerEl');el.textContent=`${m}:${s}`;el.className='timer'+(v<=10?' warn':'');
+  const tot=parseInt(document.getElementById('interval').value);
+  document.getElementById('ringFg').style.strokeDashoffset=150.8*(1-(tot-v)/tot);
+  document.getElementById('ringN').textContent=v<=99?v:'∞';
+}
+function updStats(){
+  document.getElementById('sFound').textContent=results.length;
+  document.getElementById('sVnpt').textContent=cntVnpt;
+  document.getElementById('sViettel').textContent=cntViettel;
+  document.getElementById('bdg').textContent=results.length+' SIM';
+  document.getElementById('rCount').textContent=results.length+' số';
+  updMem();
+}
+
+// ── FETCH ──────────────────────────────────────────────────────
+async function fetchVNPT(search, prefix, commit, filters) {
+  const prefixes = prefix.includes('|') ? prefix.split('|') : [prefix];
+  let items=[], total=0;
+  for(const pfx of prefixes){
+    const r = await fetch(`${PROXY}?carrier=vnpt&search=${encodeURIComponent(search)}&prefix=${encodeURIComponent(pfx)}&commit=${commit}`);
+    const j = await r.json();
+    if(j.errorCode===0){ items=items.concat((j.data||[]).map(x=>({...x,_carrier:'vnpt'}))); total+=j.totalItems||0; }
+  }
+  return {items, total};
+}
+
+async function fetchViettel(search, filters) {
+  const r = await fetch(`${PROXY}?carrier=viettel&search=${encodeURIComponent(search)}`);
+  const j = await r.json();
+  const items = (j.data||[]).map(x=>({...x, _carrier:'viettel'}));
+  return {items, total: j.totalItems||0};
+}
+
+async function doFetch() {
+  if(!serverOK){setSt('Cần chạy START.bat!','err');return;}
+  const pfxRaw = document.getElementById('prefix').value;
+  const commit = document.getElementById('commit').value;
+  const filters = getF();
+  const patterns = getPatterns();
+  const searchList = patterns.length ? patterns : [''];
+
+  round++; document.getElementById('sRound').textContent=round;
+  setSt(`Vòng ${round} — ${carrier.toUpperCase()} — ${searchList.length} pattern...`,'run');
+  addLog(`Vòng ${round}: [${carrier.toUpperCase()}] ${searchList.length} pattern`,'i');
+
+  try {
+    let allItems=[], totalKho=0;
+    for(const srch of searchList){
+      if(carrier==='vnpt'||carrier==='both'){
+        const {items,total} = await fetchVNPT(srch, pfxRaw, commit, filters);
+        allItems=allItems.concat(items); totalKho+=total;
+      }
+      if(carrier==='viettel'||carrier==='both'){
+        const {items,total} = await fetchViettel(srch, filters);
+        allItems=allItems.concat(items); totalKho+=total;
+      }
+    }
+
+    let newCount=0;
+    for(const item of allItems){
+      let disp;
+      if(item._carrier==='vnpt') disp = fmtNum_vnpt(item.so_tb);
+      else disp = fmtNum_vtt(item.isdn);
+
+      if(results.find(r=>r.number===disp)) continue;
+      const {sc,tags,cat,hot} = scoreNum(disp);
+      if(!passF(cat,sc,filters)) continue;
+
+      const price = item._carrier==='vnpt' ? item.price : parseInt(item.pre_price)||0;
+      results.unshift({number:disp, price, sc, tags, cat, hot, carrier:item._carrier, pattern:item._pattern||''});
+      newCount++;totalFound++;
+      if(item._carrier==='vnpt') cntVnpt++; else cntViettel++;
+    }
+
+    applyMem(newCount);
+    updStats();
+    render();
+    setSt(`Vòng ${round} xong — ${newCount} mới | tổng: ${results.length}`,'act');
+    addLog(`✓ ${newCount} mới (VNPT:${cntVnpt} Viettel:${cntViettel})`,'s');
+  } catch(e){setSt('Lỗi: '+e.message,'err');addLog('✗ '+e.message,'w');}
+}
+
+// ── RENDER ─────────────────────────────────────────────────────
+function render(){
+  const grid=document.getElementById('grid');
+  if(!results.length){grid.innerHTML='<div class="empty"><div style="font-size:2.2rem;margin-bottom:8px">📡</div><div>Chưa có kết quả</div></div>';return;}
+  const kw=getPatterns()[0]||'';
+  grid.innerHTML=results.map(r=>`
+    <div class="scard ${r.hot?'hot':''}" onclick="cp('${r.number}')">
+      <span class="carrier-pill ${r.carrier}">${r.carrier==='vnpt'?'VNPT':'Viettel'}</span>
+      <div class="snum">${hlN(r.number,kw)}</div>
+      <div class="smeta">
+        <span style="font-size:.7rem">${r.tags.map(t=>t.l).join(' · ')||'Số thường'}</span>
+        <span class="sprice">${fmtP(r.price)}</span>
+      </div>
+      <div class="stags">
+        ${r.tags.map(t=>`<span class="tag ${t.c}">${t.l}</span>`).join('')}
+        <span class="tag t1">★${r.sc}</span>
+      </div>
+      <div class="sbar2"><div class="sbar2f" style="width:${r.sc}%"></div></div>
+    </div>`).join('');
+}
+
+function cp(n){navigator.clipboard.writeText(n).catch(()=>{});addLog('📋 '+n,'s');setSt('📋 Copy: '+n,'act');}
+
+// ── CONTROLS ───────────────────────────────────────────────────
+function fetchOnce(){doFetch();}
+function toggleAuto(){running?stopAuto():startAuto();}
+function startAuto(){
+  running=true;
+  const b=document.getElementById('btnAuto');b.textContent='⏹ DỪNG TỰ ĐỘNG';b.classList.add('stop');
+  cd=parseInt(document.getElementById('interval').value);updT(cd);
+  doFetch();
+  tid=setInterval(()=>{cd--;updT(cd);if(cd<=0){cd=parseInt(document.getElementById('interval').value);doFetch();}},1000);
+  schedTid=setInterval(checkSched,1000);
+  updSchedSt();
+}
+function stopAuto(){
+  running=false;clearInterval(tid);clearInterval(schedTid);tid=null;schedTid=null;
+  const b=document.getElementById('btnAuto');b.textContent='▶ BẮT ĐẦU TỰ ĐỘNG';b.classList.remove('stop');
+  updT(parseInt(document.getElementById('interval').value));
+  setSt('Đã dừng','');addLog('⏹ Dừng','w');updSchedSt();
+}
+function doClear(){
+  results=[];totalFound=0;cntVnpt=0;cntViettel=0;
+  updStats();render();addLog('Xóa toàn bộ','w');
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────
+function exportXLSX(){
+  if(!results.length){alert('Chưa có dữ liệu!');return;}
+  const ws_data=[['STT','Số','Nhà mạng','Điểm','Loại','Giá (đ)','Tags'],
+    ...results.map((r,i)=>[i+1,r.number,r.carrier==='vnpt'?'VNPT':'Viettel',r.sc,r.cat,r.price||0,r.tags.map(t=>t.l).join(', ')])];
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(ws_data);
+  ws['!cols']=[{wch:5},{wch:15},{wch:10},{wch:8},{wch:12},{wch:14},{wch:30}];
+  XLSX.utils.book_append_sheet(wb,ws,'SIM đẹp');
+  const sum=[['Báo cáo SIM VNPT + Viettel'],['Ngày:',new Date().toLocaleString('vi-VN')],
+    ['Tổng:',results.length],['VNPT:',cntVnpt],['Viettel:',cntViettel],
+    ['Số đẹp ≥65:',results.filter(r=>r.sc>=65).length]];
+  XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(sum),'Thống kê');
+  XLSX.writeFile(wb,`SIM_${Date.now()}.xlsx`);
+  addLog(`📊 Excel: ${results.length} số`,'s');
+}
+function showText(){
+  if(!results.length){alert('Chưa có!');return;}
+  document.getElementById('modalTA').value=[
+    `╔══════════════════════════════════════════════════╗`,
+    `║        DANH SÁCH SIM ĐẸP — VNPT + VIETTEL       ║`,
+    `║  ${new Date().toLocaleString('vi-VN').padEnd(48)}║`,
+    `╚══════════════════════════════════════════════════╝`,'',
+    ...results.map((r,i)=>`${String(i+1).padStart(3)}. ${r.number}  [${r.carrier==='vnpt'?'VNPT  ':'Viettel'}]  ★${r.sc}  ${(r.price?new Intl.NumberFormat('vi-VN').format(r.price)+'đ':'Liên hệ').padEnd(14)}  ${r.tags.map(t=>t.l).join(', ')||'Số thường'}`),
+    ``,`─── Tổng: ${results.length} (VNPT: ${cntVnpt} | Viettel: ${cntViettel}) ───`
+  ].join('\n');
+  document.getElementById('modalTitle').textContent=`📋 DANH SÁCH (${results.length} số)`;
+  document.getElementById('modalBg').classList.add('show');
+}
+function copyModal(){navigator.clipboard.writeText(document.getElementById('modalTA').value).then(()=>addLog('📋 Copy toàn bộ','s'));}
+function downloadTxt(){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['\ufeff'+document.getElementById('modalTA').value],{type:'text/plain;charset=utf-8'}));
+  a.download=`SIM_${Date.now()}.txt`;a.click();
+}
+function copyAll(){
+  if(!results.length){alert('Chưa có!');return;}
+  navigator.clipboard.writeText(results.map(r=>`${r.number} | ${r.carrier==='vnpt'?'VNPT':'Viettel'} | ★${r.sc} | ${r.price?new Intl.NumberFormat('vi-VN').format(r.price)+'đ':'Liên hệ'} | ${r.tags.map(t=>t.l).join(', ')}`).join('\n'))
+    .then(()=>{addLog(`📋 Copy ${results.length} số`,'s');setSt(`📋 Copy xong ${results.length} số`,'act');});
+}
+
+// init
+updT(parseInt(document.getElementById('interval').value));
+document.getElementById('interval').addEventListener('change',()=>{if(!running)updT(parseInt(document.getElementById('interval').value));});
+addTS(); document.getElementById('timeInput').value='20:00'; addTS(); document.getElementById('timeInput').value='08:00';
+checkServer();
+</script>
+</body>
+</html>
